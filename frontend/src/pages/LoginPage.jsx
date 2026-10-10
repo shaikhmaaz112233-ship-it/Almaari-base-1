@@ -32,9 +32,8 @@ export default function LoginPage({ onLoginSuccess }) {
       }, 700);
 
     } catch (err) {
-      setError(
-        "Could not reach backend server at http://127.0.0.1:8000. Please ensure the Python backend terminal is running."
-      );
+      console.error("Login submission error:", err);
+      setError(err.message || "Could not reach backend server at http://127.0.0.1:8000.");
       setLoading(false);
     }
   };
@@ -237,23 +236,6 @@ export default function LoginPage({ onLoginSuccess }) {
               </motion.button>
             </motion.div>
           </motion.form>
-
-          {/* Seed hint */}
-          <div
-            style={{
-              marginTop: "24px",
-              paddingTop: "14px",
-              borderTop: "1px dashed rgba(21, 26, 23, 0.2)",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              fontSize: "12px",
-              color: "var(--ink-faint)",
-            }}
-          >
-            <span>Demo: admin / almaari123</span>
-            <span className="mono">local-only</span>
-          </div>
         </motion.div>
       </div>
     </div>

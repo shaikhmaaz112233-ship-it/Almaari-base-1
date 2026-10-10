@@ -1,0 +1,6 @@
+# Sensitive files and environments
+.env
+almaari.db
+venv/
+__pycache__/
+uploads/

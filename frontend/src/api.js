@@ -1,36 +1,47 @@
-// Centralized API client for Almaari
-// Uses relative /api which Vite proxies to http://127.0.0.1:8000.
-// This allows the app to work seamlessly across localhost, LAN, and public tunnel URLs.
-
+// Direct Connection API client for Almaari
 async function request(path, options = {}) {
-  // Try proxy first (/api/...)
+  const token = localStorage.getItem("almaari_token");
+
+  options.headers = {
+    ...options.headers,
+    ...(token ? { "Authorization": token } : {})
+  };
+
   try {
-    const res = await fetch(`/api${path}`, options);
-    if (res.status === 404) {
-      // Direct localhost fallback if proxy not rewriting
-      return await fetch(`http://127.0.0.1:8000${path}`, options);
-    }
+    const res = await fetch(`http://127.0.0.1:8000${path}`, options);
     return res;
   } catch (err) {
-    // Direct localhost fallback
-    return await fetch(`http://127.0.0.1:8000${path}`, options);
+    console.error("Backend connection failed:", err);
+    throw err;
   }
 }
 
 export async function loginUser(username, password) {
-  return request("/login", {
+  const res = await request("/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
+  
+  const data = await res.json();
+  if (res.ok && data.token) {
+    localStorage.setItem("almaari_token", data.token);
+  }
+  
+  return {
+    ok: res.ok,
+    status: res.status,
+    json: async () => data
+  };
 }
 
 export async function getDocuments() {
   const res = await request("/documents");
+  const data = await res.json();
   if (!res.ok) {
-    throw new Error("Failed to retrieve documents from the cupboard.");
+    throw new Error(data.detail || "Failed to retrieve documents from the cupboard.");
   }
-  return res.json();
+  return data;
 }
 
 export async function uploadDocument(file) {

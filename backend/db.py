@@ -1,8 +1,8 @@
 import sqlite3
-import hashlib
 import os
 from pathlib import Path
 from datetime import datetime
+import bcrypt
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DB_PATH = BASE_DIR / "almaari.db"
@@ -15,19 +15,17 @@ def get_db_connection():
     return conn
 
 
-def hash_password(password: str, salt: str = None) -> str:
-    """Hashes a password using SHA-256 with a salt."""
-    if not salt:
-        salt = os.urandom(16).hex()
-    hashed = hashlib.sha256((salt + password).encode("utf-8")).hexdigest()
-    return f"{salt}:{hashed}"
+def hash_password(password: str) -> str:
+    """Hashes a password using pure secure bcrypt."""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
+    return hashed.decode("utf-8")
 
 
 def verify_password(stored_hash: str, password: str) -> bool:
-    """Verifies a password against the stored salt:hash string."""
+    """Verifies a password against the stored bcrypt hash using pure bcrypt."""
     try:
-        salt, _ = stored_hash.split(":", 1)
-        return hash_password(password, salt) == stored_hash
+        return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
     except Exception:
         return False
 
@@ -59,7 +57,7 @@ def init_db():
         )
     """)
 
-    # Seed demo user 'admin' with password 'almaari123'
+    # Seed demo user 'admin' with password 'almaari123' using bcrypt
     cursor.execute("SELECT id FROM users WHERE username = ?", ("admin",))
     if not cursor.fetchone():
         demo_hash = hash_password("almaari123")
